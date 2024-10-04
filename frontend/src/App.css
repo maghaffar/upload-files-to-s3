@@ -60,6 +60,9 @@ th {
 #root {
   padding: 10px;
 }
+.uploader {
+  width: 50%;
+}
 
 @keyframes App-logo-spin {
   from {

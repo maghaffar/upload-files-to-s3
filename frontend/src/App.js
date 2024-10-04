@@ -1,13 +1,15 @@
 import "./App.css";
 import axios from "axios";
 import React, { useEffect, useState, useRef } from "react";
-import { Progress } from "antd";
+import { Progress, Upload, message } from "antd";
+import { InboxOutlined } from "@ant-design/icons";
+
+const { Dragger } = Upload;
 
 function App() {
   const [files, setFiles] = useState([]);
   const [status, setStatus] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
-  const fileInputRef = useRef(null);
 
   async function getFiles() {
     try {
@@ -18,10 +20,9 @@ function App() {
     }
   }
 
-  async function handleFileUpload() {
-    const file = fileInputRef.current.files[0];
+  async function handleFileUpload(file) {
     if (!file) {
-      setStatus("Please select a file.");
+      message.error("Please select a file.");
       return;
     }
 
@@ -41,21 +42,35 @@ function App() {
         },
       });
 
-      setStatus("File uploaded successfully!");
-      fileInputRef.current.value = "";
+      message.success(`${file.name} uploaded successfully!`);
 
       setTimeout(() => {
         setUploadProgress(0);
-        setStatus("");
       }, 2000);
 
       getFiles();
     } catch (error) {
       console.error("Error uploading file:", error);
-      setStatus("Error uploading file.");
+      message.error(`${file.name} upload failed.`);
       setUploadProgress(0);
     }
   }
+
+  const draggerProps = {
+    name: "file",
+    multiple: false,
+    beforeUpload: (file) => {
+      handleFileUpload(file);
+      // Prevent the automatic upload by returning false
+      return false;
+    },
+    onChange(info) {
+      const { status } = info.file;
+      if (status === "error") {
+        message.error(`${info.file.name} file upload failed.`);
+      }
+    },
+  };
 
   useEffect(() => {
     getFiles();
@@ -64,15 +79,20 @@ function App() {
   return (
     <div id="root">
       <h1>Upload File to S3</h1>
-      <input type="file" ref={fileInputRef} />
-      <button onClick={handleFileUpload}>Upload</button>
+      <div className="uploader">
+        <Dragger {...draggerProps}>
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined />
+          </p>
+          <p className="ant-upload-text">
+            Click or drag file to this area to upload
+          </p>
+          <p className="ant-upload-hint">Support for a single file upload.</p>
+        </Dragger>
+      </div>
       <br />
       <div className="progressContainer">
-        <Progress
-          percent={uploadProgress}
-          percentPosition={{ align: "center", type: "outer" }}
-          size="small"
-        />
+        <Progress percent={uploadProgress} size="small" />
       </div>
       <p className="status">{status}</p>
 
