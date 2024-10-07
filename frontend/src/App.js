@@ -120,7 +120,7 @@ function App() {
 
   return (
     <div id="root">
-      <h1>Upload File to S3</h1>
+      <h1 className="title">Upload File to S3</h1>
       <div className="uploader">
         <Dragger {...draggerProps}>
           <p className="ant-upload-drag-icon">
@@ -141,7 +141,7 @@ function App() {
         {files.map((file) => {
           if (isImage(file.Key)) {
             return (
-              <div className="image">
+              <div className="image" key={file.Key}>
                 <img
                   src={`https://example-bucket-for-my-remix-app.s3.eu-north-1.amazonaws.com/${file.Key}`}
                   alt={file.Key}
