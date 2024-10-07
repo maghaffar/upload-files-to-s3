@@ -1,6 +1,6 @@
 import "./App.css";
 import axios from "axios";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { Progress, Upload, message } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 
@@ -8,7 +8,6 @@ const { Dragger } = Upload;
 
 function App() {
   const [files, setFiles] = useState([]);
-  const [status, setStatus] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
 
   async function getFiles() {
@@ -61,7 +60,6 @@ function App() {
     multiple: false,
     beforeUpload: (file) => {
       handleFileUpload(file);
-      // Prevent the automatic upload by returning false
       return false;
     },
     onChange(info) {
@@ -94,7 +92,6 @@ function App() {
       <div className="progressContainer">
         <Progress percent={uploadProgress} size="small" />
       </div>
-      <p className="status">{status}</p>
 
       <h2>Uploaded Files</h2>
       <table id="filesTable">
