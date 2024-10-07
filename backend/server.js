@@ -4,6 +4,7 @@ const {
   S3Client,
   PutObjectCommand,
   ListObjectsCommand,
+  GetObjectCommand,
 } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { fromCognitoIdentityPool } = require("@aws-sdk/credential-providers");
@@ -54,6 +55,28 @@ app.get("/files", async (req, res) => {
     res.json(response);
   } catch (err) {
     console.error(err);
+  }
+});
+
+app.get("/download/:fileName", async (req, res) => {
+  const fileName = req.params.fileName;
+  const params = {
+    Bucket: "example-bucket-for-my-remix-app",
+    Key: fileName,
+  };
+
+  try {
+    // Create a pre-signed URL
+    const command = new GetObjectCommand(params);
+    const signedUrl = await getSignedUrl(s3Client, command, {
+      expiresIn: 3600,
+    }); // URL expires in 1 hour
+
+    // Return the signed URL to the frontend
+    res.status(200).json({ url: signedUrl });
+  } catch (err) {
+    console.error("Error generating signed URL:", err);
+    res.status(500).send("Error generating download URL");
   }
 });
 

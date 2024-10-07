@@ -1,19 +1,57 @@
 import "./App.css";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { Progress, Upload, message } from "antd";
-import { InboxOutlined } from "@ant-design/icons";
+import { Progress, Upload, message, Button } from "antd";
+import { InboxOutlined, DownloadOutlined } from "@ant-design/icons";
 
 const { Dragger } = Upload;
 
 function App() {
   const [files, setFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [downloadingFile, setDownloadingFile] = useState("");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadingPercent, setDownloadingPercent] = useState(0);
 
   async function getFiles() {
     try {
       const res = await axios.get("http://localhost:3001/files");
       setFiles(res.data.Contents ? res.data.Contents : []);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+
+  async function getFile(fileName) {
+    try {
+      const res = await axios.get(`http://localhost:3001/download/${fileName}`);
+      const signedUrl = res.data.url;
+      const downloadRes = await axios.get(signedUrl, {
+        responseType: "blob",
+        onDownloadProgress: (progressEvent) => {
+          const totalLength = progressEvent.total;
+          if (totalLength !== null) {
+            const percentage = Math.round(
+              (progressEvent.loaded * 100) / totalLength
+            );
+            setDownloadingPercent(percentage);
+          }
+        },
+      });
+
+      // Create a Blob from the response and download the file
+      const fileUrl = window.URL.createObjectURL(new Blob([downloadRes.data]));
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link); // Clean up the link element
+      setTimeout(() => {
+        setDownloadingFile("");
+        setIsDownloading(false);
+        setDownloadingPercent(0);
+      }, 2000);
     } catch (error) {
       console.error("Error:", error);
     }
@@ -70,6 +108,12 @@ function App() {
     },
   };
 
+  function isImage(fileKey) {
+    const extension = fileKey.split(".").pop().toLowerCase();
+    const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp"];
+    return imageExtensions.includes(extension);
+  }
+
   useEffect(() => {
     getFiles();
   }, []);
@@ -93,6 +137,23 @@ function App() {
         <Progress percent={uploadProgress} size="small" />
       </div>
 
+      <div className="images">
+        {files.map((file) => {
+          if (isImage(file.Key)) {
+            return (
+              <div className="image">
+                <img
+                  src={`https://example-bucket-for-my-remix-app.s3.eu-north-1.amazonaws.com/${file.Key}`}
+                  alt={file.Key}
+                  key={file.Key}
+                  height={200}
+                  width={"100%"}
+                />
+              </div>
+            );
+          }
+        })}
+      </div>
       <h2>Uploaded Files</h2>
       <table id="filesTable">
         <thead>
@@ -105,14 +166,28 @@ function App() {
           {files.map((file) => (
             <tr key={file.Key}>
               <td>{file.Key}</td>
-              <td>
-                <a
-                  href={`https://example-bucket-for-my-remix-app.s3.eu-north-1.amazonaws.com/${file.Key}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Download
-                </a>
+              <td className="downloadButton">
+                {isDownloading && downloadingFile === file.Key ? (
+                  <Progress
+                    type="circle"
+                    percent={downloadingPercent}
+                    size={50}
+                  />
+                ) : (
+                  <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    size="large"
+                    disabled={isDownloading && downloadingFile != file.Key}
+                    onClick={() => {
+                      setDownloadingFile(file.Key);
+                      setIsDownloading(true);
+                      getFile(file.Key);
+                    }}
+                  >
+                    Download
+                  </Button>
+                )}
               </td>
             </tr>
           ))}

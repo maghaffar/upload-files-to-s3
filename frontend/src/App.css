@@ -63,6 +63,15 @@ th {
 .uploader {
   width: 50%;
 }
+.images {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 10px;
+}
+.image {
+  width: 20%;
+}
 
 @keyframes App-logo-spin {
   from {
